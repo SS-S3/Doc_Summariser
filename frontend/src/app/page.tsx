@@ -33,69 +33,78 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen p-8 lg:p-24 max-w-7xl mx-auto">
-      <div className="flex justify-between items-end mb-12">
+    <main className="min-h-screen p-8 lg:p-24 max-w-5xl mx-auto font-serif">
+      <header className="border-b-2 border-double border-[var(--border)] pb-8 mb-12 flex flex-col md:flex-row justify-between items-baseline gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-            Document Intelligence
+          <h1 className="text-5xl font-bold italic mb-2">
+            The Digital Library
           </h1>
-          <p className="text-gray-400 text-lg">AI-powered insights for your library</p>
+          <p className="text-[#6b6256] italic text-lg uppercase tracking-widest text-sm">Automated Intelligence & Literary Insights</p>
         </div>
-        <Link href="/qa">
-          <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-full transition-all shadow-[0_0_15px_rgba(79,70,229,0.5)] hover:shadow-[0_0_25px_rgba(79,70,229,0.8)]">
-            Ask AI
+        <Link href="/qa" className="no-underline">
+          <button className="border border-[var(--border)] px-8 py-2 hover:bg-[var(--border)] hover:text-[var(--background)] transition-colors uppercase tracking-widest text-xs font-bold">
+            Query the Archive
           </button>
         </Link>
-      </div>
+      </header>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+        <div className="flex justify-center py-20 italic">
+          Fetching records...
         </div>
       ) : books.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">
-          No books found. Run the scraper to populate data.
+        <div className="text-center py-20 italic text-gray-600 border border-dashed border-[var(--border)]">
+          The archive is currently empty.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-12">
           {books.map((book) => (
-            <Link href={`/book/${book.id}`} key={book.id}>
-              <div className="h-full bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl hover:border-indigo-500/50 transition-all cursor-pointer p-6 flex flex-col group overflow-hidden relative">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <svg className="w-24 h-24 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                </div>
-                <div className="flex justify-between items-start mb-4 z-10">
-                  <span className="inline-block px-3 py-1 bg-indigo-500/20 text-indigo-300 text-xs font-semibold rounded-full border border-indigo-500/30">
-                    {book.genre || 'Unknown'}
-                  </span>
-                  <div className="flex items-center space-x-3 text-sm">
-                    {book.sentiment && (
-                      <div className={`w-2 h-2 rounded-full ${
-                        book.sentiment.toLowerCase() === 'positive' ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]' :
-                        book.sentiment.toLowerCase() === 'negative' ? 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]' :
-                        'bg-gray-400 shadow-[0_0_8px_rgba(156,163,175,0.5)]'
-                      }`} title={`${book.sentiment} Sentiment`}></div>
-                    )}
-                    <div className="flex items-center text-yellow-500">
-                      <span className="mr-1">★</span> {book.rating.toFixed(1)}
-                    </div>
+            <article key={book.id} className="group flex flex-col md:flex-row gap-8 pb-12 border-b border-[var(--border)] last:border-0">
+              <div className="flex-grow">
+                <div className="flex justify-between items-baseline mb-2">
+                  <h2 className="text-3xl font-bold group-hover:italic transition-all">
+                    <Link href={`/book/${book.id}`} className="no-underline">
+                      {book.title}
+                    </Link>
+                  </h2>
+                  <div className="text-sm font-mono uppercase tracking-tighter">
+                    Ref: {book.id.toString().padStart(4, '0')}
                   </div>
                 </div>
-                <h2 className="text-xl font-bold mb-2 text-white line-clamp-2 z-10 group-hover:text-indigo-400 transition-colors">
-                  {book.title}
-                </h2>
-                <p className="text-gray-400 text-sm mb-4 line-clamp-3 z-10 flex-grow">
-                  {book.summary || book.description || 'No summary available.'}
+                
+                <div className="flex items-center gap-4 mb-4 text-sm uppercase tracking-wider font-semibold text-[#7c4d3a]">
+                  <span>{book.author}</span>
+                  <span className="w-1 h-1 bg-[var(--border)] rounded-full"></span>
+                  <span>{book.genre || 'General'}</span>
+                  <span className="w-1 h-1 bg-[var(--border)] rounded-full"></span>
+                  <span className="flex items-center">
+                    Rating: {book.rating.toFixed(1)}/5.0
+                  </span>
+                </div>
+
+                <p className="text-lg leading-relaxed text-[#4a453e] mb-6 line-clamp-3 italic">
+                  "{book.summary || book.description || 'No description available in the records.'}"
                 </p>
-                <div className="mt-auto z-10 pt-4 border-t border-gray-800/50 text-indigo-400 text-sm font-medium flex items-center">
-                  View Insights
-                  <svg className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+
+                <div className="flex items-center justify-between">
+                  <Link href={`/book/${book.id}`} className="text-xs uppercase font-bold tracking-widest hover:pl-2 transition-all">
+                    Read Full Entry →
+                  </Link>
+                  {book.sentiment && (
+                    <div className="text-[10px] uppercase border border-[var(--border)] px-2 py-0.5 rounded italic">
+                      Tone: {book.sentiment}
+                    </div>
+                  )}
                 </div>
               </div>
-            </Link>
+            </article>
           ))}
         </div>
       )}
+
+      <footer className="mt-20 pt-8 border-t border-[var(--border)] text-center text-xs italic text-gray-500 uppercase tracking-widest">
+        End of Records — Curated by AI Librarian
+      </footer>
     </main>
   );
 }

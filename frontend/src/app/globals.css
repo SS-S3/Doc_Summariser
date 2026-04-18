@@ -1,52 +1,95 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-inter);
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
 }
 
 :root {
-  --background: #0f1115;
-  --foreground: #f8fafc;
+  --background: #fdfaf3; /* Antique paper */
+  --foreground: #2d2a26; /* Charcoal / Aged ink */
+  --border: #4a453e;
+  --accent: #7c4d3a;    /* Leather/Binding brown */
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-serif), Georgia, serif;
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
+  line-height: 1.7;
 }
 
-/* Background mesh/glow effect */
+/* Subtle paper texture */
 body::before {
   content: '';
   position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: 
-    radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.15) 0%, transparent 40%);
+  inset: 0;
+  background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
+  opacity: 0.15;
   z-index: -1;
   pointer-events: none;
 }
 
-/* Premium Scrollbar */
+/* Old school horizontal rule */
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+/* Typography polish */
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+
+a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: opacity 0.2s;
+}
+
+a:hover {
+  opacity: 0.7;
+}
+
+/* Simple Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 17, 21, 0.5);
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(79, 70, 229, 0.5);
-  border-radius: 4px;
+  background: var(--border);
+  border: 2px solid var(--background);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(79, 70, 229, 0.8);
+  background: var(--accent);
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+  article, .border-double {
+    border-width: 1px !important;
+  }
 }

@@ -25,12 +25,10 @@ export default function BookDetailPage() {
   useEffect(() => {
     if (!params.id) return;
     
-    // Fetch book details
     fetch(`http://127.0.0.1:8000/api/books/${params.id}/`)
       .then((res) => res.json())
       .then((data) => {
         setBook(data);
-        // Fetch recommendations once book is loaded
         fetch(`http://127.0.0.1:8000/api/books/${params.id}/recommendations/`)
           .then((res) => res.json())
           .then((recData) => setRecommendations(recData))
@@ -45,104 +43,102 @@ export default function BookDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
+      <div className="min-h-screen flex items-center justify-center font-serif italic">
+        Consulting the archive...
       </div>
     );
   }
 
   if (!book) {
     return (
-      <div className="min-h-screen flex items-center justify-center flex-col">
-        <h1 className="text-2xl text-gray-300 mb-4">Book not found</h1>
-        <Link href="/" className="text-indigo-400 hover:text-indigo-300">Return to Dashboard</Link>
+      <div className="min-h-screen flex items-center justify-center flex-col font-serif">
+        <h1 className="text-2xl mb-4 italic">Record not found.</h1>
+        <Link href="/" className="text-[var(--accent)] hover:italic transition-all">Return to Library</Link>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen p-8 lg:p-24 max-w-5xl mx-auto">
-      <Link href="/" className="text-indigo-400 hover:text-indigo-300 mb-8 inline-flex items-center transition-colors">
-        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-        Back to Dashboard
-      </Link>
+    <main className="min-h-screen p-8 lg:p-24 max-w-4xl mx-auto font-serif">
+      <nav className="mb-12 border-b border-[var(--border)] pb-4 flex justify-between items-center">
+        <Link href="/" className="no-underline text-xs uppercase font-bold tracking-widest hover:italic">
+          ← Back to Collection
+        </Link>
+        <Link href="/qa" className="no-underline text-xs uppercase font-bold tracking-widest hover:italic">
+          Inquire with the Archive →
+        </Link>
+      </nav>
 
-      <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-3xl p-8 lg:p-12 shadow-2xl relative overflow-hidden">
-        {/* Glow effect */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-        
-        <div className="relative z-10 flex flex-col md:flex-row gap-8">
-          <div className="flex-1">
-            <div className="flex items-center space-x-4 mb-4">
-              <span className="px-4 py-1.5 bg-indigo-500/20 text-indigo-300 text-sm font-semibold rounded-full border border-indigo-500/30 shadow-[0_0_10px_rgba(79,70,229,0.2)]">
-                {book.genre || 'Unknown Genre'}
-              </span>
-              <div className="flex items-center text-yellow-500">
-                <span className="mr-1 text-lg">★</span> {book.rating.toFixed(1)}
-              </div>
-              {book.sentiment && (
-                <span className={`px-3 py-1 text-xs font-medium rounded-md border ${
-                  book.sentiment.toLowerCase() === 'positive' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                  book.sentiment.toLowerCase() === 'negative' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                  'bg-gray-500/10 text-gray-400 border-gray-500/20'
-                }`}>
-                  {book.sentiment} Sentiment
-                </span>
-              )}
-            </div>
-            
-            <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-2 text-white">
-              {book.title}
-            </h1>
-            <p className="text-xl text-gray-400 mb-8">by {book.author}</p>
-            
-            <div className="mb-8 p-6 bg-indigo-900/20 rounded-2xl border border-indigo-500/20 relative">
-              <h3 className="text-indigo-400 font-bold mb-2 flex items-center uppercase tracking-wider text-xs">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                AI Summary
-              </h3>
-              <p className="text-gray-200 leading-relaxed text-lg">
-                {book.summary || 'Summary is being generated...'}
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="text-gray-400 font-semibold mb-2">Original Description</h3>
-              <p className="text-gray-500 leading-relaxed text-sm">
-                {book.description || 'No description available.'}
-              </p>
-            </div>
-            
-            {book.book_url && (
-              <a href={book.book_url} target="_blank" rel="noopener noreferrer" className="mt-8 inline-block bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg transition-colors border border-gray-600">
-                View Original Source
-              </a>
-            )}
-          </div>
+      <article className="border-4 border-double border-[var(--border)] p-10 lg:p-16 mb-20 bg-white/30 relative">
+        <div className="absolute top-4 right-4 text-[10px] uppercase font-mono border border-[var(--border)] px-2 py-1">
+          Catalog No. {book.id.toString().padStart(5, '0')}
         </div>
-      </div>
+
+        <header className="mb-12 text-center">
+          <div className="text-sm uppercase tracking-[0.3em] font-semibold text-[#7c4d3a] mb-4">
+            {book.genre || 'General Literature'}
+          </div>
+          <h1 className="text-5xl lg:text-6xl font-bold mb-4 leading-tight">
+            {book.title}
+          </h1>
+          <p className="text-2xl italic text-gray-600">by {book.author}</p>
+          
+          <div className="mt-6 flex justify-center items-center gap-6 text-sm uppercase font-bold tracking-widest">
+            <span>Rating: {book.rating.toFixed(1)}/5.0</span>
+            {book.sentiment && <span className="italic border border-[var(--border)] px-3 py-1">{book.sentiment} Tone</span>}
+          </div>
+        </header>
+
+        <div className="space-y-12 max-w-2xl mx-auto">
+          <section>
+            <h3 className="text-xs uppercase font-black tracking-widest mb-6 border-b border-[var(--border)] pb-2 flex justify-between items-center">
+              <span>Artificial Intelligence Synthesis</span>
+              <span className="text-[10px] font-normal italic">Generated Report</span>
+            </h3>
+            <div className="text-xl leading-relaxed italic text-[#2d2a26] first-letter:text-5xl first-letter:font-bold first-letter:mr-3 first-letter:float-left first-letter:leading-[1]">
+              {book.summary || 'Summary pending analysis.'}
+            </div>
+          </section>
+
+          <section className="pt-8 opacity-70">
+            <h3 className="text-xs uppercase font-bold tracking-widest mb-4">Source Description</h3>
+            <p className="text-base leading-relaxed text-gray-700 whitespace-pre-wrap">
+              {book.description || 'No source description provided.'}
+            </p>
+          </section>
+
+          {book.book_url && (
+            <div className="text-center pt-12">
+              <a href={book.book_url} target="_blank" rel="noopener noreferrer" className="no-underline text-xs uppercase font-bold tracking-tighter border-b-2 border-[var(--border)] hover:bg-[var(--border)] hover:text-white transition-all px-4 py-2">
+                Consult Original Manuscript
+              </a>
+            </div>
+          )}
+        </div>
+      </article>
 
       {recommendations.length > 0 && (
-        <div className="mt-16">
-          <h2 className="text-2xl font-bold mb-6 text-white flex items-center">
-            <span className="w-8 h-1 bg-indigo-500 rounded-full mr-3"></span>
-            Similar Books
+        <section className="mt-20">
+          <h2 className="text-xs uppercase font-black tracking-[0.4em] mb-12 text-center border-y border-[var(--border)] py-4">
+            Further Reading In This Category
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {recommendations.map((rec) => (
-              <Link href={`/book/${rec.id}`} key={rec.id}>
-                <div className="bg-gray-900/60 border border-gray-700/50 rounded-xl p-5 hover:border-indigo-500/50 transition-colors cursor-pointer group h-full flex flex-col">
-                  <div className="text-xs text-indigo-400 mb-2">{rec.genre}</div>
-                  <h3 className="text-gray-200 font-bold mb-2 line-clamp-2 group-hover:text-white transition-colors">{rec.title}</h3>
-                  <div className="mt-auto pt-3 flex items-center text-yellow-500 text-xs border-t border-gray-800">
-                    <span className="mr-1">★</span> {rec.rating.toFixed(1)}
-                  </div>
+              <Link href={`/book/${rec.id}`} key={rec.id} className="no-underline group">
+                <div className="border border-[var(--border)] p-8 hover:bg-[var(--border)] hover:text-white transition-all">
+                  <div className="text-[10px] uppercase mb-2 opacity-60 tracking-widest">{rec.genre}</div>
+                  <h3 className="text-2xl font-bold mb-4 group-hover:italic">{rec.title}</h3>
+                  <div className="text-xs uppercase font-bold tracking-widest">Reference {rec.id.toString().padStart(4, '0')} →</div>
                 </div>
               </Link>
             ))}
           </div>
-        </div>
+        </section>
       )}
+
+      <footer className="mt-32 pt-8 border-t border-[var(--border)] text-center text-xs italic text-gray-500 uppercase tracking-widest">
+        Official Digital Archive Entry — Page {book.id}
+      </footer>
     </main>
   );
 }

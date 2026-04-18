@@ -45,7 +45,7 @@ def upload_book(request):
         book = serializer.save()
         
         # Ingest to ChromaDB
-        text_to_embed = f"Title: {book.title}\nAuthor: {book.author}\nGenre: {book.genre}\nDescription: {book.description}"
+        text_to_embed = f"Title: {book.title}\nAuthor: {book.author}\nGenre: {book.genre}\nRating: {book.rating}/5.0\nReviews: {book.reviews_count}\nDescription: {book.description}"
         chunks = chunk_text(text_to_embed, 200, 50)
         
         if chunks:

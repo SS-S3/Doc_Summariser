@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function QAPage() {
@@ -8,6 +8,17 @@ export default function QAPage() {
   const [citations, setCitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Persistence logic
+  useEffect(() => {
+    const savedQuery = localStorage.getItem('qa_query');
+    const savedAnswer = localStorage.getItem('qa_answer');
+    const savedCitations = localStorage.getItem('qa_citations');
+    
+    if (savedQuery) setQuery(savedQuery);
+    if (savedAnswer) setAnswer(savedAnswer);
+    if (savedCitations) setCitations(JSON.parse(savedCitations));
+  }, []);
+
   const handleAsk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -15,6 +26,9 @@ export default function QAPage() {
     setLoading(true);
     setAnswer('');
     setCitations([]);
+    
+    // Save query immediately
+    localStorage.setItem('qa_query', query);
     
     try {
       const res = await fetch('http://127.0.0.1:8000/api/qa/', {
@@ -26,113 +40,123 @@ export default function QAPage() {
       });
       
       const data = await res.json();
-      setAnswer(data.answer || 'No answer generated.');
-      setCitations(data.citations || []);
+      const newAnswer = data.answer || 'The archive provides no record for this inquiry.';
+      const newCitations = data.citations || [];
+      
+      setAnswer(newAnswer);
+      setCitations(newCitations);
+      
+      // Save results
+      localStorage.setItem('qa_answer', newAnswer);
+      localStorage.setItem('qa_citations', JSON.stringify(newCitations));
     } catch (err) {
       console.error(err);
-      setAnswer('Failed to get an answer. Please check if the backend is running.');
+      setAnswer('Communication with the archival server has failed.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen p-8 lg:p-24 max-w-4xl mx-auto flex flex-col">
-      <Link href="/" className="text-indigo-400 hover:text-indigo-300 mb-8 inline-flex items-center transition-colors">
-        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-        Back to Dashboard
-      </Link>
+    <main className="min-h-screen p-8 lg:p-24 max-w-4xl mx-auto font-serif">
+      <nav className="mb-12 border-b border-[var(--border)] pb-4">
+        <Link href="/" className="no-underline text-xs uppercase font-bold tracking-widest hover:italic">
+          ← Back to Library
+        </Link>
+      </nav>
       
-      <div className="mb-12">
-        <h1 className="text-4xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-          Intelligent Q&A
-        </h1>
-        <p className="text-gray-400 text-lg">Ask questions across your entire library using our advanced RAG pipeline.</p>
-      </div>
-
-      <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl shadow-xl overflow-hidden flex flex-col h-[60vh] relative">
-        <div className="absolute top-0 right-0 p-8 opacity-5">
-          <svg className="w-64 h-64 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-        </div>
-
-        <div className="flex-grow p-6 overflow-y-auto z-10 flex flex-col space-y-4">
-          {/* Welcome Message */}
-          <div className="flex justify-start">
-            <div className="bg-gray-800/80 border border-gray-700/50 rounded-2xl rounded-tl-none px-6 py-4 max-w-[80%]">
-              <p className="text-gray-200">Hello! I am your AI Librarian. What would you like to know about your book collection?</p>
-            </div>
-          </div>
-
-          {/* User Query */}
-          {query && (answer || loading) && (
-            <div className="flex justify-end">
-              <div className="bg-indigo-600 border border-indigo-500/50 rounded-2xl rounded-tr-none px-6 py-4 max-w-[80%] text-white shadow-[0_0_15px_rgba(79,70,229,0.3)]">
-                <p>{query}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Loading state */}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-800/80 border border-gray-700/50 rounded-2xl rounded-tl-none px-6 py-4 flex items-center space-x-2">
-                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-              </div>
-            </div>
-          )}
-
-          {/* Answer */}
-          {answer && !loading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-800/80 border border-gray-700/50 rounded-2xl rounded-tl-none px-6 py-4 max-w-[90%]">
-                <div className="text-gray-200 prose prose-invert max-w-none mb-4 whitespace-pre-wrap">
-                  {answer}
-                </div>
-                
-                {citations && citations.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-700/50">
-                    <h4 className="text-sm font-semibold text-indigo-400 mb-2 flex items-center">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                      Sources Used
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {citations.map((cit, idx) => (
-                        <Link href={`/book/${cit.book_id}`} key={idx}>
-                          <span className="inline-block bg-gray-900 border border-gray-700 hover:border-indigo-500/50 text-xs text-gray-400 hover:text-indigo-300 px-2 py-1 rounded transition-colors cursor-pointer">
-                            {cit.title}
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 border-t border-gray-800/50 bg-gray-900/80 z-10">
-          <form onSubmit={handleAsk} className="relative">
+      <header className="mb-16 text-center">
+        <h1 className="text-5xl font-bold mb-4 italic">The Inquisitor</h1>
+        <p className="text-[#6b6256] uppercase tracking-[0.4em] text-xs font-bold">Inquire within the Digital Archive</p>
+      </header>
+      
+      <div className="border-t border-b-4 border-double border-[var(--border)] py-12 mb-12">
+        <form onSubmit={handleAsk} className="mb-12">
+          <label className="block text-center text-xs uppercase font-black tracking-widest mb-6 italic">
+            State your inquiry below
+          </label>
+          <div className="flex flex-col md:flex-row gap-4">
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ask a question about the books..."
-              className="w-full bg-gray-800/50 border border-gray-700 rounded-full py-4 pl-6 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent placeholder-gray-500 transition-all"
+              placeholder="e.g., Which books involve mystery and high stakes?"
+              className="flex-grow bg-transparent border-b-2 border-[var(--border)] py-4 text-2xl focus:outline-none focus:italic placeholder:italic placeholder:opacity-30"
               disabled={loading}
             />
             <button
               type="submit"
               disabled={loading || !query.trim()}
-              className="absolute right-2 top-2 bottom-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white p-2 rounded-full transition-colors flex items-center justify-center w-10 h-10"
+              className="border-2 border-[var(--border)] px-10 py-4 uppercase font-bold tracking-widest hover:bg-[var(--border)] hover:text-white transition-all disabled:opacity-30"
             >
-              <svg className="w-5 h-5 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19V6m0 0l-7 7m7-7l7 7"></path></svg>
+              Consult
             </button>
-          </form>
+          </div>
+        </form>
+
+        <div className="min-h-[300px] relative">
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center italic text-gray-500 animate-pulse">
+              Scrutinizing the manuscripts...
+            </div>
+          )}
+
+          {!loading && answer && (
+            <div className="animate-in fade-in duration-700 relative group">
+              <div className="absolute top-0 right-0 flex gap-4 no-print opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(answer);
+                    alert('Record copied to clipboard.');
+                  }}
+                  className="text-[10px] uppercase font-bold border border-[var(--border)] px-3 py-1 hover:bg-[var(--border)] hover:text-white transition-all"
+                >
+                  Copy Record
+                </button>
+                <button 
+                  onClick={() => window.print()}
+                  className="text-[10px] uppercase font-bold border border-[var(--border)] px-3 py-1 hover:bg-[var(--border)] hover:text-white transition-all"
+                >
+                  Print Page
+                </button>
+              </div>
+
+              <div className="text-xs uppercase font-bold tracking-widest mb-6 border-b border-[var(--border)] pb-2">
+                Archival Response
+              </div>
+              <div className="text-2xl leading-relaxed italic text-[#2d2a26] mb-12 whitespace-pre-wrap">
+                {answer}
+              </div>
+              
+              {citations && citations.length > 0 && (
+                <div className="pt-8 border-t border-dashed border-[var(--border)]">
+                  <h4 className="text-xs uppercase font-bold tracking-widest mb-4 opacity-60">References cited in this response:</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {citations.map((cit, idx) => (
+                      <Link href={`/book/${cit.book_id}`} key={idx} className="no-underline">
+                        <div className="border border-[var(--border)] p-4 text-sm hover:italic transition-all flex justify-between items-center">
+                          <span>{cit.title}</span>
+                          <span className="text-[10px] opacity-60">Ref: {cit.book_id}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!loading && !answer && (
+            <div className="h-full flex items-center justify-center text-gray-400 italic">
+              Awaiting your command.
+            </div>
+          )}
         </div>
       </div>
+
+      <footer className="mt-20 pt-8 text-center text-[10px] italic text-gray-500 uppercase tracking-widest">
+        Proprietary Intelligence System — All queries logged in archival records.
+      </footer>
     </main>
   );
 }
