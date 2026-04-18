@@ -4,7 +4,20 @@ A full-stack, AI-powered digital archive that automates the collection of book d
 
 ---
 
-## 📸 Interface Access
+## 📸 Screenshots (Latest UI)
+
+### Home Page - Library Archive
+![Home Page](home_page.png)
+
+### The Inquisitor - RAG Q&A Interface
+![Q&A Interface](qa_page.png)
+
+### Digital Manuscript - Book Detail
+![Detail Page](detail_page.png)
+
+---
+
+## 🚀 Interface Access
 
 ### 1. Library Archive (Home)
 - **URL**: `http://localhost:3000`

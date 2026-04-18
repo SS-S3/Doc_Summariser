@@ -13,7 +13,7 @@ def capture_screenshots():
         # Capture Home Page
         print("Capturing Home Page...")
         driver.get("http://localhost:3000")
-        time.sleep(3) # Wait for Next.js to load
+        time.sleep(3)
         driver.save_screenshot("home_page.png")
         print("Saved home_page.png")
         
@@ -23,6 +23,13 @@ def capture_screenshots():
         time.sleep(3)
         driver.save_screenshot("qa_page.png")
         print("Saved qa_page.png")
+
+        # Capture Detail Page (Book ID 1)
+        print("Capturing Detail Page...")
+        driver.get("http://localhost:3000/book/1")
+        time.sleep(3)
+        driver.save_screenshot("detail_page.png")
+        print("Saved detail_page.png")
         
     except Exception as e:
         print(f"Error: {e}")
