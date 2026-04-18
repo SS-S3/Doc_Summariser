@@ -13,6 +13,7 @@ interface Book {
   book_url: string;
   summary: string;
   genre: string;
+  sentiment: string;
 }
 
 export default function BookDetailPage() {
@@ -79,6 +80,15 @@ export default function BookDetailPage() {
               <div className="flex items-center text-yellow-500">
                 <span className="mr-1 text-lg">★</span> {book.rating.toFixed(1)}
               </div>
+              {book.sentiment && (
+                <span className={`px-3 py-1 text-xs font-medium rounded-md border ${
+                  book.sentiment.toLowerCase() === 'positive' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                  book.sentiment.toLowerCase() === 'negative' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                  'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                }`}>
+                  {book.sentiment} Sentiment
+                </span>
+              )}
             </div>
             
             <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-2 text-white">

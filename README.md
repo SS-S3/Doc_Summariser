@@ -1,6 +1,6 @@
 # Document Intelligence Platform 📚🧠
 
-A full-stack, AI-powered web application that automates the collection of book data, generates intelligent insights using local LLMs, and provides a powerful Retrieval-Augmented Generation (RAG) interface for querying your library.
+A full-stack, AI-powered web application that automates the collection of book data, generates intelligent insights using local LLMs (Ollama) or OpenAI, and provides a powerful Retrieval-Augmented Generation (RAG) interface for querying your library.
 
 ## 📸 Screenshots
 
@@ -15,10 +15,11 @@ A full-stack, AI-powered web application that automates the collection of book d
 ## 🌟 Features
 
 - **Automated Data Ingestion**: A robust Selenium web scraper that crawls `books.toscrape.com`, extracting book metadata and descriptions.
-- **AI Insight Generation**: For every ingested book, a local LLM (`qwen2.5:3b` via Ollama) automatically generates a concise summary and predicts the genre.
-- **RAG Q&A Pipeline**: Ask natural language questions about your entire book corpus. The system embeds chunks using `sentence-transformers`, searches `ChromaDB`, and constructs intelligent answers with source citations using Ollama.
+- **AI Insight Generation**: For every ingested book, an LLM automatically generates a concise summary, predicts the genre, and performs sentiment analysis.
+- **Hybrid LLM Support**: Supports local models via **Ollama** (e.g., `qwen2.5:3b`) and cloud models via **OpenAI** (e.g., `gpt-4o-mini`) as a backup or primary choice.
+- **RAG Q&A Pipeline**: Ask natural language questions about your entire book corpus. The system embeds chunks using `sentence-transformers`, searches `ChromaDB`, and constructs intelligent answers with source citations.
 - **Premium UI**: A sleek, dark-mode glassmorphism interface built with Next.js and Tailwind CSS.
-- **Intelligent Caching**: File-based Django caching (`/tmp/django_cache`) for expensive RAG queries, minimizing LLM overhead and ensuring lightning-fast subsequent responses (24-hour TTL).
+- **Intelligent Caching**: Django file-based caching for expensive RAG queries, minimizing LLM overhead and ensuring lightning-fast subsequent responses.
 
 ---
 
@@ -29,7 +30,7 @@ A full-stack, AI-powered web application that automates the collection of book d
 - **Database**: MySQL (`mysqlclient`)
 - **Vector Store**: ChromaDB
 - **Embeddings**: `sentence-transformers` (`all-MiniLM-L6-v2`)
-- **AI Generation**: Local Ollama (`qwen2.5:3b` / `gemma2:2b` / `gemma4:e4b`)
+- **AI Generation**: Local Ollama or OpenAI API
 - **Automation**: Python + Selenium
 
 ### Frontend
@@ -41,11 +42,11 @@ A full-stack, AI-powered web application that automates the collection of book d
 
 ## 📋 Prerequisites
 
-Before you begin, ensure you have the following installed on your machine:
+Before you begin, ensure you have the following installed:
 - **Python 3.9+**
 - **Node.js 18+** & npm
 - **MySQL Server** (running locally on port `3306`)
-- **Ollama** (running locally)
+- **Ollama** (optional, for local LLM mode)
 - **Google Chrome** (required for Selenium automation)
 
 ---
@@ -58,9 +59,16 @@ Before you begin, ensure you have the following installed on your machine:
    ```bash
    mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS document_intelligence CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
    ```
-   *(Ensure your MySQL credentials in `backend/backend/settings.py` match your local setup. Default is user: `root`, password: `root`)*
 
-2. **Pull the required Ollama model**:
+2. **Configure Environment Variables**:
+   Copy the example environment file and fill in your details:
+   ```bash
+   cp .env.example .env
+   ```
+   *Edit `.env` to set your MySQL credentials and choose your `LLM_MODE` (`ollama` or `openai`). If using OpenAI, provide your `OPENAI_API_KEY`.*
+
+3. **(Optional) Local AI Setup**:
+   If using Ollama, pull the required model:
    ```bash
    ollama pull qwen2.5:3b
    ```
@@ -69,14 +77,13 @@ Before you begin, ensure you have the following installed on your machine:
 
 1. **Navigate to the project root and create a virtual environment**:
    ```bash
-   cd document_intelligence
    python3 -m venv venv
    source venv/bin/activate
    ```
 
 2. **Install dependencies**:
    ```bash
-   pip install django djangorestframework mysqlclient chromadb sentence-transformers langchain selenium requests django-cors-headers
+   pip install django djangorestframework mysqlclient chromadb sentence-transformers langchain selenium requests django-cors-headers python-dotenv openai
    ```
 
 3. **Run database migrations**:
@@ -96,15 +103,7 @@ Before you begin, ensure you have the following installed on your machine:
 1. **Navigate to the frontend directory**:
    ```bash
    cd ../frontend
-   ```
-
-2. **Install dependencies**:
-   ```bash
    npm install
-   ```
-
-3. **Start the Next.js Development Server**:
-   ```bash
    npm run dev
    ```
    The UI will be available at [http://localhost:3000](http://localhost:3000).
@@ -113,56 +112,88 @@ Before you begin, ensure you have the following installed on your machine:
 
 ## 🕷️ Running the Scraper
 
-To populate the database with books, summaries, genres, and vector embeddings, run the automated Selenium scraper. Ensure the Django server and Ollama are running before executing this.
+To populate the database with books and vector embeddings, run the automated Selenium scraper:
 
 ```bash
 # From the project root, ensure venv is activated
 source venv/bin/activate
-
-# Run the scraper
 PYTHONUNBUFFERED=1 python scraper.py
 ```
-*The scraper will navigate `books.toscrape.com`, utilize Ollama to generate insights, and POST the payload to the Django backend where chunks are embedded and saved into ChromaDB.*
 
 ---
 
-## 🔌 API Endpoints
+## 🔌 API Documentation
 
-The Django backend exposes the following REST APIs:
+### 1. List Books
+- **Endpoint**: `GET /api/books/`
+- **Response**: List of book objects with `id`, `title`, `author`, `genre`, `sentiment`, `rating`, and `summary`.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET`  | `/api/books/` | List all uploaded books. |
-| `GET`  | `/api/books/<id>/` | Retrieve detailed metadata for a specific book. |
-| `GET`  | `/api/books/<id>/recommendations/` | Get 4 related books based on vector similarity or genre. |
-| `POST` | `/api/books/upload/` | Endpoint for the scraper to upload data. Automatically handles chunking (200 words, 50 overlap) and ChromaDB ingestion. |
-| `POST` | `/api/qa/` | The RAG query endpoint. Takes `{"question": "..."}` and returns an AI-generated answer with citations. |
+### 2. Book Detail
+- **Endpoint**: `GET /api/books/<id>/`
+- **Response**: Single book object with full metadata.
+
+### 3. Get Recommendations
+- **Endpoint**: `GET /api/books/<id>/recommendations/`
+- **Description**: Returns 4 related books based on vector similarity in ChromaDB.
+
+### 4. Upload Book (Internal/Scraper)
+- **Endpoint**: `POST /api/books/upload/`
+- **Body**: 
+  ```json
+  {
+    "title": "String",
+    "author": "String",
+    "description": "String",
+    "summary": "String",
+    "genre": "String",
+    "rating": 4.5,
+    "book_url": "URL"
+  }
+  ```
+- **Side Effect**: Automatically chunks the description, generates embeddings, and saves to ChromaDB.
+
+### 5. RAG Q&A
+- **Endpoint**: `POST /api/qa/`
+- **Body**: `{"question": "What are some fantasy books?"}`
+- **Response**:
+  ```json
+  {
+    "answer": "Based on the context, we have 'Harry Potter'...",
+    "citations": [
+      {"book_id": 1, "title": "Harry Potter and the Sorcerer's Stone"}
+    ]
+  }
+  ```
 
 ---
 
-## 🧠 Deep Dive: The RAG Architecture
+## 🧠 Architecture Overview
 
-1. **Chunking**: When a book is uploaded, its title, author, genre, and description are concatenated and chunked into rolling windows of **200 words** with a **50-word overlap**.
-2. **Embedding**: The chunks are encoded into dense vectors using `all-MiniLM-L6-v2` (`sentence-transformers`).
-3. **Storage**: Vectors and metadata (book ID, title, chunk index) are persistently stored in a local **ChromaDB** collection.
-4. **Retrieval**: When a user asks a question, the query is embedded and a similarity search fetches the top 5 most relevant context chunks.
-5. **Generation**: The context is injected into a prompt for `qwen2.5:3b`, instructing it to act as an AI Librarian and answer strictly based on the provided context.
-6. **Citation**: The backend maps the retrieved chunks back to their origin books and returns clickable citations to the frontend.
+1. **Scraping**: Selenium extracts raw HTML -> AI generates summary/genre/sentiment -> Data POSTed to Backend.
+2. **Ingestion**: Backend chunks text (200 words, 50 overlap) -> `sentence-transformers` creates 384-dim vectors -> Vectors stored in **ChromaDB**.
+3. **RAG Pipeline**: 
+   - User Query -> Embedded -> Vector Search in ChromaDB (Top 5).
+   - Context + Question -> LLM Prompt (Ollama/OpenAI).
+   - Answer + Citations -> Frontend.
+4. **Caching**: Query hashes are stored in Django's file-based cache for 24h to save API costs/compute.
 
 ---
 
-## ❓ Sample Questions and Answers
+## 📁 Project Structure
 
-Here are a few sample questions you can ask the RAG AI after the database is populated:
-
-**Q: What is a good mystery book?**
-> **AI:** "The Girl on the Train" by Paula Hawkins is an excellent mystery thriller. It revolves around Rachel, a commuter who becomes entangled in a missing persons investigation that promises to send shockwaves throughout her life. The book features a compelling psychological narrative with unreliable narrators.
-> *Source: The Girl on the Train (Chunk 2)*
-
-**Q: Can you recommend a classic sci-fi book?**
-> **AI:** "Dune" by Frank Herbert is a classic sci-fi novel that deals with complex themes of politics, religion, and human survival on the harsh desert planet of Arrakis. It is highly recommended if you are interested in deep world-building and space epics.
-> *Source: Dune (Chunk 5)*
-
-**Q: Tell me about books written by J.K. Rowling.**
-> **AI:** The database currently contains "Harry Potter and the Sorcerer's Stone" by J.K. Rowling. This is a Fantasy novel about a young wizard discovering his magical heritage at Hogwarts School of Witchcraft and Wizardry.
-> *Source: Harry Potter and the Sorcerer's Stone (Chunk 1)*
+```text
+.
+├── backend/            # Django backend
+│   ├── api/            # API application logic
+│   │   ├── llm_utils.py# Shared LLM Fallback utility
+│   │   ├── views.py    # RAG & API endpoints
+│   │   └── models.py   # Book database models
+│   └── backend/        # Project settings & configuration
+├── frontend/           # Next.js frontend
+│   └── src/            # Source code
+│       ├── app/        # App router components
+│       └── components/ # UI components (Glassmorphism)
+├── scraper.py          # Selenium automation script
+├── .env.example        # Environment template
+└── README.md           # Documentation
+```

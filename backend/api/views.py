@@ -10,6 +10,7 @@ import chromadb
 
 from .models import Book
 from .serializers import BookSerializer
+from .llm_utils import generate_text
 
 # Initialize ChromaDB
 chroma_client = chromadb.PersistentClient(path="./chroma_db")
@@ -18,33 +19,7 @@ collection = chroma_client.get_or_create_collection(name="document_intelligence"
 # Initialize Embedding Model
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
-
-def get_ollama_model():
-    try:
-        models_resp = requests.get("http://127.0.0.1:11434/api/tags", timeout=2)
-        models = [m["name"] for m in models_resp.json().get("models", [])]
-        if "qwen2.5:3b" in models: return "qwen2.5:3b"
-        if "gemma2:2b" in models: return "gemma2:2b"
-        if "gemma4:e4b" in models: return "gemma4:e4b"
-    except:
-        pass
-    return "qwen2.5:3b"
-
-def call_ollama(prompt):
-    model_name = get_ollama_model()
-    payload = {
-        "model": model_name,
-        "prompt": prompt,
-        "stream": False
-    }
-    try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=60)
-        if response.status_code == 200:
-            return response.json().get("response", "").strip()
-    except Exception as e:
-        print(f"Ollama error: {e}")
-    return "Error connecting to LLM."
+# Removed local call_ollama and get_ollama_model logic as it is now in llm_utils.py
 
 def chunk_text(text, chunk_size=200, overlap=50):
     if not text: return []
@@ -156,7 +131,7 @@ Question: {question}
 
 Answer:"""
 
-    answer = call_ollama(prompt)
+    answer = generate_text(prompt)
     
     response_data = {
         "answer": answer,

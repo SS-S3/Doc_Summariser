@@ -2,54 +2,34 @@ import os
 import time
 import requests
 import json
+import sys
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
+# Add backend to path for importing llm_utils
+sys.path.append(os.path.join(os.getcwd(), 'backend'))
+from api.llm_utils import generate_text
+
 # API endpoint for uploading books
-UPLOAD_URL = "http://127.0.0.1:8000/api/books/upload/"
-OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
-MODEL_NAME = "qwen2.5:3b"
-FALLBACK_MODEL_NAME = "gemma2:2b"
-
-# We'll use requests to see if qwen2.5:3b is available, else fallback
-try:
-    models_resp = requests.get("http://127.0.0.1:11434/api/tags")
-    models = [m["name"] for m in models_resp.json().get("models", [])]
-    if MODEL_NAME not in models:
-        if FALLBACK_MODEL_NAME in models:
-            MODEL_NAME = FALLBACK_MODEL_NAME
-        else:
-            # Maybe it's gemma4:e4b which was pulled earlier or qwen is still downloading
-            if "gemma4:e4b" in models:
-                MODEL_NAME = "gemma4:e4b"
-except:
-    pass
-
-print(f"Using model: {MODEL_NAME}")
-
-def call_ollama(prompt):
-    payload = {
-        "model": MODEL_NAME,
-        "prompt": prompt,
-        "stream": False
-    }
-    response = requests.post(OLLAMA_URL, json=payload)
-    if response.status_code == 200:
-        return response.json().get("response", "").strip()
-    return ""
+# API endpoint for uploading books
+UPLOAD_URL = os.getenv("UPLOAD_URL", "http://127.0.0.1:8000/api/books/upload/")
+# Removed local Ollama logic as it is now in llm_utils.py
 
 def generate_insights(description):
     if not description:
         return "No summary available.", "Unknown"
     
     summary_prompt = f"Write a concise, 2-3 sentence summary for the following book description:\n\n{description}"
-    summary = call_ollama(summary_prompt)
+    summary = generate_text(summary_prompt)
     
     genre_prompt = f"Based on the following book description, predict a single primary genre (e.g., Fiction, Non-Fiction, Fantasy, Science Fiction, Mystery, Romance, Thriller). Output ONLY the genre name.\n\n{description}"
-    genre = call_ollama(genre_prompt)
+    genre = generate_text(genre_prompt)
     
-    return summary, genre
+    sentiment_prompt = f"Analyze the sentiment of the following book description. Output ONLY one word: Positive, Negative, or Neutral.\n\n{description}"
+    sentiment = generate_text(sentiment_prompt)
+    
+    return summary, genre, sentiment
 
 def scrape_books(pages=3):
     options = Options()
@@ -86,7 +66,7 @@ def scrape_books(pages=3):
                 
                 print(f"Processing: {title}")
                 
-                summary, genre = generate_insights(description)
+                summary, genre, sentiment = generate_insights(description)
                 
                 book = {
                     "title": title,
@@ -96,7 +76,8 @@ def scrape_books(pages=3):
                     "description": description,
                     "book_url": link,
                     "summary": summary,
-                    "genre": genre
+                    "genre": genre,
+                    "sentiment": sentiment
                 }
                 
                 books_data.append(book)

@@ -12,6 +12,7 @@ interface Book {
   book_url: string;
   summary: string;
   genre: string;
+  sentiment: string;
 }
 
 export default function Home() {
@@ -67,8 +68,17 @@ export default function Home() {
                   <span className="inline-block px-3 py-1 bg-indigo-500/20 text-indigo-300 text-xs font-semibold rounded-full border border-indigo-500/30">
                     {book.genre || 'Unknown'}
                   </span>
-                  <div className="flex items-center text-yellow-500 text-sm">
-                    <span className="mr-1">★</span> {book.rating.toFixed(1)}
+                  <div className="flex items-center space-x-3 text-sm">
+                    {book.sentiment && (
+                      <div className={`w-2 h-2 rounded-full ${
+                        book.sentiment.toLowerCase() === 'positive' ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]' :
+                        book.sentiment.toLowerCase() === 'negative' ? 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]' :
+                        'bg-gray-400 shadow-[0_0_8px_rgba(156,163,175,0.5)]'
+                      }`} title={`${book.sentiment} Sentiment`}></div>
+                    )}
+                    <div className="flex items-center text-yellow-500">
+                      <span className="mr-1">★</span> {book.rating.toFixed(1)}
+                    </div>
                   </div>
                 </div>
                 <h2 className="text-xl font-bold mb-2 text-white line-clamp-2 z-10 group-hover:text-indigo-400 transition-colors">
