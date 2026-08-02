@@ -2,6 +2,10 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '../../components/AuthContext';
+import NavBar from '../../components/NavBar';
+
+type ArchiveStatus = 'bookmarked' | 'reading' | 'finished' | null;
 
 interface Book {
   id: number;
@@ -14,22 +18,44 @@ interface Book {
   summary: string;
   genre: string;
   sentiment: string;
+  user_status?: { status: ArchiveStatus; notes: string } | null;
 }
 
 export default function BookDetailPage() {
   const params = useParams();
+  const { token, authHeader } = useAuth();
   const [book, setBook] = useState<Book | null>(null);
   const [recommendations, setRecommendations] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const [archiveStatus, setArchiveStatus] = useState<ArchiveStatus>(null);
+  const [archiveSaving, setArchiveSaving] = useState(false);
+
+  const handleArchive = async (newStatus: ArchiveStatus) => {
+    if (!book || !token) return;
+    setArchiveSaving(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/books/${book.id}/archive/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify(newStatus ? { status: newStatus } : {}),
+      });
+      if (res.ok) setArchiveStatus(newStatus);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setArchiveSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (!params.id) return;
     
-    fetch(`http://127.0.0.1:8000/api/books/${params.id}/`)
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/books/${params.id}/`)
       .then((res) => res.json())
       .then((data) => {
         setBook(data);
-        fetch(`http://127.0.0.1:8000/api/books/${params.id}/recommendations/`)
+        setArchiveStatus(data.user_status ?? null);
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/books/${params.id}/recommendations/`)
           .then((res) => res.json())
           .then((recData) => setRecommendations(recData))
           .catch((err) => console.error(err))
@@ -64,9 +90,12 @@ export default function BookDetailPage() {
         <Link href="/" className="no-underline text-xs uppercase font-bold tracking-widest hover:italic">
           ← Back to Collection
         </Link>
-        <Link href="/qa" className="no-underline text-xs uppercase font-bold tracking-widest hover:italic">
-          Inquire with the Archive →
-        </Link>
+        <div className="flex gap-4 items-center">
+          <NavBar />
+          <Link href="/qa" className="no-underline text-xs uppercase font-bold tracking-widest hover:italic">
+            Inquire with the Archive →
+          </Link>
+        </div>
       </nav>
 
       <article className="border-4 border-double border-[var(--border)] p-10 lg:p-16 mb-20 bg-white/30 relative">
@@ -87,6 +116,26 @@ export default function BookDetailPage() {
             <span>Rating: {book.rating.toFixed(1)}/5.0</span>
             {book.sentiment && <span className="italic border border-[var(--border)] px-3 py-1">{book.sentiment} Tone</span>}
           </div>
+
+          {/* Personal Archive Controls */}
+          {token && (
+            <div className="mt-8 flex justify-center gap-3 flex-wrap">
+              {(['bookmarked', 'reading', 'finished'] as const).map((s) => (
+                <button
+                  key={s}
+                  disabled={archiveSaving}
+                  onClick={() => handleArchive(archiveStatus === s ? null : s)}
+                  className={`text-[10px] uppercase font-bold tracking-widest px-4 py-2 border transition-all ${
+                    archiveStatus === s
+                      ? 'bg-[var(--border)] text-[var(--background)]'
+                      : 'border-[var(--border)] hover:bg-[var(--border)] hover:text-[var(--background)]'
+                  } disabled:opacity-40`}
+                >
+                  {s === 'bookmarked' ? '✦ Bookmark' : s === 'reading' ? '◎ Reading' : '✓ Finished'}
+                </button>
+              ))}
+            </div>
+          )}
         </header>
 
         <div className="space-y-12 max-w-2xl mx-auto">

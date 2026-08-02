@@ -1,15 +1,19 @@
 import os
 import hashlib
+import random
 import requests
 from django.core.cache import cache
+from django.contrib.auth.models import User
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 from sentence_transformers import SentenceTransformer
 import chromadb
 
-from .models import Book
-from .serializers import BookSerializer
+from .models import Book, UserBook
+from .serializers import BookSerializer, UserBookSerializer
 from .llm_utils import generate_text
 
 # Initialize ChromaDB
@@ -35,6 +39,41 @@ def chunk_text(text, chunk_size=200, overlap=50):
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        data = BookSerializer(instance).data
+        if request.user.is_authenticated:
+            ub = UserBook.objects.filter(user=request.user, book=instance).first()
+            data['user_status'] = ub.status if ub else None
+        return Response(data)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register(request):
+    username = request.data.get('username', '').strip()
+    password = request.data.get('password', '')
+    if not username or not password:
+        return Response({'error': 'Username and password required.'}, status=status.HTTP_400_BAD_REQUEST)
+    if User.objects.filter(username=username).exists():
+        return Response({'error': 'Username already taken.'}, status=status.HTTP_400_BAD_REQUEST)
+    if len(password) < 6:
+        return Response({'error': 'Password must be at least 6 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+    user = User.objects.create_user(username=username, password=password)
+    refresh = RefreshToken.for_user(user)
+    return Response({'access': str(refresh.access_token), 'refresh': str(refresh), 'username': user.username}, status=status.HTTP_201_CREATED)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_view(request):
+    from django.contrib.auth import authenticate
+    username = request.data.get('username', '').strip()
+    password = request.data.get('password', '')
+    user = authenticate(username=username, password=password)
+    if not user:
+        return Response({'error': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
+    refresh = RefreshToken.for_user(user)
+    return Response({'access': str(refresh.access_token), 'refresh': str(refresh), 'username': user.username})
 
 @api_view(['POST'])
 def upload_book(request):
@@ -142,3 +181,54 @@ Answer:"""
     cache.set(cache_key, response_data, 60 * 60 * 24)
     
     return Response(response_data)
+
+@api_view(['GET'])
+def surprise_me(request):
+    ids = list(Book.objects.values_list('id', flat=True))
+    if not ids:
+        return Response({"error": "No books in archive"}, status=status.HTTP_404_NOT_FOUND)
+    book = Book.objects.get(pk=random.choice(ids))
+    data = BookSerializer(book).data
+    if request.user.is_authenticated:
+        ub = UserBook.objects.filter(user=request.user, book=book).first()
+        data['user_status'] = ub.status if ub else None
+    return Response(data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_archive_status(request, pk):
+    try:
+        book = Book.objects.get(pk=pk)
+    except Book.DoesNotExist:
+        return Response({"error": "Book not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get('status')
+    notes = request.data.get('notes', '')
+
+    valid = [c[0] for c in UserBook.STATUS_CHOICES]
+    if new_status not in valid and new_status is not None:
+        return Response({"error": f"Status must be one of {valid}"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if new_status is None:
+        UserBook.objects.filter(user=request.user, book=book).delete()
+        return Response({"detail": "Removed from archive"})
+
+    obj, _ = UserBook.objects.update_or_create(
+        user=request.user, book=book,
+        defaults={'status': new_status, 'notes': notes}
+    )
+    return Response(UserBookSerializer(obj).data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_archive(request):
+    user_books = UserBook.objects.select_related('book').filter(user=request.user)
+    data = {}
+    for ub in user_books:
+        s = ub.status
+        if s not in data:
+            data[s] = []
+        book_data = BookSerializer(ub.book).data
+        book_data['notes'] = ub.notes
+        data[s].append(book_data)
+    return Response(data)

@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import NavBar from './components/NavBar';
 
 interface Book {
   id: number;
@@ -18,9 +20,20 @@ interface Book {
 export default function Home() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const handleSurpriseMe = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/books/surprise/`);
+      const data = await res.json();
+      if (data.id) router.push(`/book/${data.id}`);
+    } catch (err) {
+      console.error('Surprise Me failed', err);
+    }
+  };
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/books/')
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/books/`)
       .then((res) => res.json())
       .then((data) => {
         setBooks(data);
@@ -41,11 +54,20 @@ export default function Home() {
           </h1>
           <p className="text-[#6b6256] italic text-lg uppercase tracking-widest text-sm">Automated Intelligence & Literary Insights</p>
         </div>
-        <Link href="/qa" className="no-underline">
-          <button className="border border-[var(--border)] px-8 py-2 hover:bg-[var(--border)] hover:text-[var(--background)] transition-colors uppercase tracking-widest text-xs font-bold">
-            Query the Archive
+        <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
+          <NavBar />
+          <button
+            onClick={handleSurpriseMe}
+            className="border border-[var(--border)] px-6 py-2 hover:bg-[var(--accent)] hover:text-[var(--background)] hover:border-[var(--accent)] transition-colors uppercase tracking-widest text-xs font-bold italic"
+          >
+            ✦ Surprise Me
           </button>
-        </Link>
+          <Link href="/qa" className="no-underline">
+            <button className="border border-[var(--border)] px-8 py-2 hover:bg-[var(--border)] hover:text-[var(--background)] transition-colors uppercase tracking-widest text-xs font-bold">
+              Query the Archive
+            </button>
+          </Link>
+        </div>
       </header>
 
       {loading ? (

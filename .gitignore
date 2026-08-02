@@ -1,5 +1,6 @@
 # Environments
 .env
+.env.local
 .venv
 env/
 venv/
@@ -49,3 +50,4 @@ Icon
 ._*
 .Spotlight-V100
 .Trashes
+TODO.md

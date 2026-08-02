@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import NavBar from '../components/NavBar';
 
 export default function QAPage() {
   const [query, setQuery] = useState('');
@@ -31,7 +32,7 @@ export default function QAPage() {
     localStorage.setItem('qa_query', query);
     
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/qa/', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/qa/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -59,10 +60,11 @@ export default function QAPage() {
 
   return (
     <main className="min-h-screen p-8 lg:p-24 max-w-4xl mx-auto font-serif">
-      <nav className="mb-12 border-b border-[var(--border)] pb-4">
+      <nav className="mb-12 border-b border-[var(--border)] pb-4 flex justify-between items-center">
         <Link href="/" className="no-underline text-xs uppercase font-bold tracking-widest hover:italic">
           ← Back to Library
         </Link>
+        <NavBar />
       </nav>
       
       <header className="mb-16 text-center">

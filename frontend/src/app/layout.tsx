@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { EB_Garamond, Inter } from "next/font/google";
+import { AuthProvider } from "./components/AuthContext";
 import "./globals.css";
 
 const ebGaramond = EB_Garamond({
@@ -27,7 +28,9 @@ export default function RootLayout({
       lang="en"
       className={`${ebGaramond.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }
